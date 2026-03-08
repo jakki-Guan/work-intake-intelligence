@@ -1,0 +1,74 @@
+[
+  {
+    "title": "Major outage affecting remote staff",
+    "description": "Remote staff across multiple departments are unable to access the internal VPN, shared drives, and authentication portal. Several users report repeated disconnects, failed reconnection attempts, and blocked access to critical documents needed for time-sensitive operational work.",
+    "channel": "phone",
+    "priority": "high",
+    "requester_type": "manager",
+    "created_hour": 8,
+    "request_type": "incident"
+  },
+  {
+    "title": "Production reporting dashboard unavailable",
+    "description": "The production reporting dashboard has been inaccessible since early morning. Users see timeout errors, blank visual containers, and failed refresh messages. This is affecting multiple teams that rely on the dashboard for same-day operational reporting and issue escalation.",
+    "channel": "phone",
+    "priority": "high",
+    "requester_type": "employee",
+    "created_hour": 9,
+    "request_type": "incident"
+  },
+  {
+    "title": "Urgent payment processing issue",
+    "description": "A payment processing workflow appears to be failing for multiple customer transactions. The finance team flagged incomplete settlement records, delayed confirmations, and potential downstream reconciliation issues that require immediate triage and follow-up.",
+    "channel": "email",
+    "priority": "high",
+    "requester_type": "manager",
+    "created_hour": 10,
+    "request_type": "billing"
+  },
+  {
+    "title": "Escalated login and MFA failure",
+    "description": "Users are reporting a combination of login failures, MFA prompt loops, and session expiration issues. The problem appears broader than a single account and may indicate an authentication service degradation affecting normal access and support queues.",
+    "channel": "phone",
+    "priority": "high",
+    "requester_type": "employee",
+    "created_hour": 11,
+    "request_type": "access"
+  },
+  {
+    "title": "Client-facing portal performance degradation",
+    "description": "The client-facing portal is responding very slowly and intermittently returning error pages. Customers cannot consistently submit requests, review invoices, or update account details. Several complaints have been received and the issue may create SLA risk if unresolved.",
+    "channel": "chat",
+    "priority": "high",
+    "requester_type": "customer",
+    "created_hour": 12,
+    "request_type": "technical"
+  },
+  {
+    "title": "Shared mailbox and queue assignment issue",
+    "description": "Incoming requests appear to be landing in the wrong queue and some team members are not receiving expected shared mailbox notifications. This may create routing delays, duplicate handling, and missed follow-up actions for urgent tickets.",
+    "channel": "email",
+    "priority": "high",
+    "requester_type": "manager",
+    "created_hour": 13,
+    "request_type": "technical"
+  },
+  {
+    "title": "Repeated software crash during onboarding setup",
+    "description": "During multiple onboarding setups, the provisioning workflow crashes before account, email, and software access are fully assigned. This is delaying new starter readiness and creating repeated manual intervention requests from local support staff.",
+    "channel": "portal",
+    "priority": "high",
+    "requester_type": "manager",
+    "created_hour": 14,
+    "request_type": "onboarding"
+  },
+  {
+    "title": "High-volume customer complaint trend",
+    "description": "A surge of customer complaints has been reported regarding billing discrepancies, missing confirmations, and delayed refunds. The issue appears to be affecting multiple recent transactions and may require urgent cross-team coordination to prevent wider escalation.",
+    "channel": "phone",
+    "priority": "high",
+    "requester_type": "customer",
+    "created_hour": 15,
+    "request_type": "billing"
+  }
+]

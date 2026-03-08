@@ -33,6 +33,11 @@ artifacts/predictions/*.csv
 
 # Notebook cache
 notebooks/.ipynb_checkpoints/
+notebooks/01_public_data_check.ipynb
+# Runtime monitoring artifacts
+data/monitoring/prediction_logs/*.jsonl
+data/monitoring/reference/reference_profile.json
+reports/monitoring/generated/
 
 # Jupyter temporary files
 *.ipynb_checkpoints

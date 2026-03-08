@@ -1,0 +1,92 @@
+[
+  {
+    "title": "Cannot access account",
+    "description": "I am locked out of my account and cannot sign in to the portal.",
+    "channel": "email",
+    "priority": "medium",
+    "requester_type": "employee",
+    "created_hour": 9,
+    "request_type": "access"
+  },
+  {
+    "title": "VPN not working",
+    "description": "My VPN keeps disconnecting every few minutes when I work from home.",
+    "channel": "portal",
+    "priority": "high",
+    "requester_type": "employee",
+    "created_hour": 8,
+    "request_type": "technical"
+  },
+  {
+    "title": "Billing discrepancy",
+    "description": "The invoice amount looks incorrect and I need someone to review the charge.",
+    "channel": "email",
+    "priority": "medium",
+    "requester_type": "customer",
+    "created_hour": 11,
+    "request_type": "billing"
+  },
+  {
+    "title": "Password reset issue",
+    "description": "I used the reset link but it keeps saying the token is invalid.",
+    "channel": "chat",
+    "priority": "low",
+    "requester_type": "customer",
+    "created_hour": 14,
+    "request_type": "access"
+  },
+  {
+    "title": "Laptop setup request",
+    "description": "New employee starting Monday needs laptop setup, software access, and email configuration.",
+    "channel": "portal",
+    "priority": "medium",
+    "requester_type": "manager",
+    "created_hour": 10,
+    "request_type": "onboarding"
+  },
+  {
+    "title": "System outage",
+    "description": "The internal dashboard is unavailable for the whole team and work is blocked.",
+    "channel": "phone",
+    "priority": "high",
+    "requester_type": "employee",
+    "created_hour": 15,
+    "request_type": "incident"
+  },
+  {
+    "title": "Refund follow-up",
+    "description": "I submitted a refund request last week and have not received any update yet.",
+    "channel": "email",
+    "priority": "low",
+    "requester_type": "customer",
+    "created_hour": 13,
+    "request_type": "billing"
+  },
+  {
+    "title": "Slow application performance",
+    "description": "The app takes over a minute to load each page and times out sometimes.",
+    "channel": "portal",
+    "priority": "medium",
+    "requester_type": "customer",
+    "created_hour": 16,
+    "request_type": "technical"
+  },
+  {
+    "title": "Permission change needed",
+    "description": "Please grant edit access to the shared folder for the finance team.",
+    "channel": "email",
+    "priority": "medium",
+    "requester_type": "employee",
+    "created_hour": 9,
+    "request_type": "access"
+  },
+  {
+    "title": "Urgent payment failure",
+    "description": "A client payment did not go through and this needs immediate investigation.",
+    "channel": "phone",
+    "priority": "high",
+    "requester_type": "manager",
+    "created_hour": 17,
+    "request_type": "billing"
+  }
+]
