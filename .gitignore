@@ -20,3 +20,19 @@ __pycache__/
 # OS / editor misc
 .DS_Store
 Thumbs.db
+# Data files
+data/raw/*.csv
+data/processed/*.csv
+data/synthetic/*.csv
+
+# Model and metrics artifacts
+artifacts/models/*.joblib
+artifacts/models/*.pkl
+artifacts/metrics/*.json
+artifacts/predictions/*.csv
+
+# Notebook cache
+notebooks/.ipynb_checkpoints/
+
+# Jupyter temporary files
+*.ipynb_checkpoints
