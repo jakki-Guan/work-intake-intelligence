@@ -102,3 +102,11 @@ Initial monitoring outputs will focus on:
 - p95 latency
 
 Real-time alert delivery is deferred until the batch monitoring workflow is complete and stable.
+
+## D-013: Monitoring Window Strategy
+Batch monitoring compares a frozen reference profile against a recent prediction window rather than the full accumulated log history.
+
+Reason:
+- more realistic for operational monitoring
+- easier to interpret than comparing against all historical logs
+- helps recent shifts surface more clearly in summary outputs
