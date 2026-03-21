@@ -216,6 +216,11 @@ python -m venv .venv
 ```
 
 ### 2. Activate environment
+macOS / Linux
+```bash
+source .venv/bin/activate
+```
+
 Windows PowerShell
 ```bash
 .venv\Scripts\Activate.ps1
@@ -226,19 +231,40 @@ Windows PowerShell
 pip install -r requirements.txt
 ```
 
-### 4. Run API
+### 4. Add the raw dataset
+Place the raw public dataset file at:
+
+```text
+data/raw/public_tickets_multi_lang_20k.csv
+```
+
+### 5. Prepare data
+```bash
+python -m src.data.prepare_public_ticket_data
+python -m src.data.preprocess
+```
+
+### 6. Train models
+```bash
+python -m src.models.train_router_baseline
+python -m src.models.train_sla_baseline
+```
+
+### 7. Run API
 ```bash
 uvicorn src.api.main:app --reload
 ```
 
-### 5. Open API docs
+The API expects trained model artifacts in `artifacts/models/` before startup.
+
+### 8. Open API docs
 Visit:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-### 6. Generate monitoring summary
+### 9. Generate monitoring summary
 ```bash
 python -m src.monitoring.reference_profile
 python -m src.monitoring.run_monitoring
