@@ -40,6 +40,69 @@ Work Intake Intelligence builds a lightweight end-to-end workflow that:
 5. generates monitoring summaries for operations reporting
 6. exports Power BI-ready monitoring outputs
 
+## Architecture Diagram
+
+```mermaid
+flowchart LR
+    subgraph OFF["Offline Training"]
+        A["Public ticket data"]
+        B["Schema prep"]
+        C["Train router model"]
+        D["Train SLA model"]
+        E[("Router model")]
+        F[("SLA model")]
+
+        A --> B
+        B --> C --> E
+        B --> D --> F
+    end
+
+    subgraph ON["Online Inference"]
+        G["Client / Ops user"]
+        H["FastAPI `/predict`"]
+        I["Routing prediction"]
+        J["SLA risk prediction"]
+        K["Prediction response"]
+
+        G --> H
+        H --> I --> J --> K
+        E --> I
+        F --> J
+    end
+
+    subgraph MON["Monitoring & Reporting"]
+        L["Prediction logs"]
+        M["Reference profile"]
+        N["Monitoring checks"]
+        O["Power BI CSV export"]
+        P["Dashboard / reporting"]
+
+        K --> L
+        L --> M
+        L --> N
+        M --> N
+        N --> O --> P
+    end
+
+    classDef offline fill:#E8F3FF,stroke:#2B6CB0,color:#12324A,stroke-width:1.5px;
+    classDef online fill:#EAF7EE,stroke:#2F855A,color:#143825,stroke-width:1.5px;
+    classDef monitor fill:#FFF4DB,stroke:#B7791F,color:#4A2F0B,stroke-width:1.5px;
+    classDef store fill:#F4F5F7,stroke:#4A5568,color:#1A202C,stroke-width:1.5px;
+
+    class A,B,C,D offline;
+    class G,H,I,J,K online;
+    class L,M,N,O,P monitor;
+    class E,F store;
+```
+
+Legend:
+- Blue: offline training pipeline
+- Green: online inference flow
+- Gold: monitoring and reporting
+- Gray: persisted model artifacts
+
+This diagram is the simplified system view for the main README. The file-level detailed version is documented in `reports/demo/final_release_notes.md`.
+
 ---
 
 ## Data
@@ -301,18 +364,26 @@ python -m src.monitoring.export_monitoring_csv
 
 ```text
 src/
-  api/
-  data/
-  monitoring/
+  api/          FastAPI entrypoint, request schema, inference service
+  data/         raw-data standardization and preprocessing
+  models/       baseline training and evaluation scripts
+  monitoring/   prediction logging, reference profiles, drift checks, CSV export
+  utils/        shared project path helpers
 
 reports/
-  evaluation/
-  monitoring/
+  evaluation/   baseline result summaries
+  monitoring/   monitoring specs, playbooks, generated outputs, dashboard assets
+  demo/         pitch, walkthrough, and release/demo materials
 
 data/
-  monitoring/
+  raw/          raw and standardized dataset files
+  monitoring/   prediction logs, reference profiles, Power BI-ready exports
 
-scripts/
+artifacts/
+  models/       trained `.joblib` model artifacts
+  metrics/      saved training metrics and evaluation outputs
+
+scripts/        smoke tests, demo replay, and demo run helpers
 ```
 
 ---
