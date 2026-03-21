@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Work Intake Intelligence — Monitoring</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f0f2f7; --surface:#fff; --surface2:#f8f9fc; --border:#e2e6ef;
+  --text:#1a1f36; --muted:#6b7599; --accent:#4361ee; --green:#0ea371;
+  --warn:#e05c2a; --red:#d63355; --yellow:#c98a00; --purple:#7048e8;
+  --mono:'IBM Plex Mono',monospace; --sans:'Plus Jakarta Sans',sans-serif;
+  --radius:10px; --shadow:0 1px 4px rgba(0,0,0,0.07),0 4px 16px rgba(0,0,0,0.05);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;}
+
+/* ── UPLOAD ── */
+#uploadScreen{
+  position:fixed;inset:0;z-index:300;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;
+}
+.up-title{font-family:var(--mono);font-size:13px;letter-spacing:.12em;color:var(--accent);text-transform:uppercase;}
+.up-sub{font-size:13px;color:var(--muted);text-align:center;line-height:1.7;}
+.up-cards{display:flex;gap:20px;flex-wrap:wrap;justify-content:center;}
+.up-card{
+  width:270px;border:1.5px dashed var(--border);border-radius:14px;
+  padding:26px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;
+  cursor:pointer;transition:all .2s;background:var(--surface);position:relative;
+}
+.up-card:hover{border-color:var(--accent);background:rgba(67,97,238,.04);}
+.up-card.loaded{border-color:var(--green);border-style:solid;}
+.up-card input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;}
+.up-icon{font-size:26px;}
+.up-card-title{font-family:var(--mono);font-size:11px;color:var(--text);letter-spacing:.05em;}
+.up-card-sub{font-size:11px;color:var(--muted);text-align:center;}
+.up-status{font-family:var(--mono);font-size:10px;color:var(--green);}
+.start-btn{
+  padding:11px 34px;border-radius:8px;border:none;background:var(--accent);
+  color:#fff;font-family:var(--mono);font-size:12px;letter-spacing:.08em;
+  cursor:pointer;opacity:.3;pointer-events:none;transition:all .2s;
+}
+.start-btn.ready{opacity:1;pointer-events:all;}
+.start-btn.ready:hover{background:#6b8df5;}
+.demo-link{font-size:11px;color:var(--muted);cursor:pointer;font-family:var(--mono);text-decoration:underline;}
+.demo-link:hover{color:var(--accent);}
+
+/* ── DASHBOARD ── */
+#dashboard{display:none;}
+.page{max-width:1440px;margin:0 auto;padding:20px 28px 32px;display:flex;flex-direction:column;gap:16px;}
+
+/* header */
+.header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.page-title{font-size:19px;font-weight:700;color:var(--text);letter-spacing:-.02em;}
+.page-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+.header-right{display:flex;align-items:center;gap:10px;}
+.reset-btn{
+  padding:6px 14px;border-radius:7px;border:1px solid var(--border);
+  background:var(--surface);color:var(--muted);font-family:var(--mono);
+  font-size:10px;cursor:pointer;transition:all .2s;
+}
+.reset-btn:hover{border-color:var(--red);color:var(--red);}
+
+/* filter bar */
+.filter-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 16px;
+  box-shadow:var(--shadow);
+}
+.filter-group{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+.filter-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-family:var(--mono);white-space:nowrap;}
+.filter-sep{width:1px;height:24px;background:var(--border);margin:0 4px;}
+.chip{
+  padding:4px 12px;border-radius:20px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--muted);font-size:11px;
+  cursor:pointer;transition:all .15s;white-space:nowrap;font-family:var(--mono);
+}
+.chip:hover{border-color:var(--accent);color:var(--accent);}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600;}
+.chip.active.warn-chip{background:var(--warn);border-color:var(--warn);}
+.filter-clear{font-size:10px;color:var(--muted);cursor:pointer;font-family:var(--mono);margin-left:auto;text-decoration:underline;}
+.filter-clear:hover{color:var(--red);}
+
+/* section tag */
+.stag{
+  font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);font-family:var(--mono);margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.stag::after{content:'';height:1px;background:var(--border);flex:1;}
+
+/* kpi */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.kpi{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px 16px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  transition:box-shadow .2s;
+}
+.kpi:hover{box-shadow:0 4px 20px rgba(0,0,0,.12);}
+.kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.kpi.c-blue::before{background:var(--accent);}
+.kpi.c-warn::before{background:var(--warn);}
+.kpi.c-yellow::before{background:var(--yellow);}
+.kpi.c-green::before{background:var(--green);}
+.kpi-lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+.kpi-val{font-family:var(--mono);font-size:32px;font-weight:600;line-height:1;}
+.kpi.c-blue .kpi-val{color:var(--accent);}
+.kpi.c-warn .kpi-val{color:var(--warn);}
+.kpi.c-yellow .kpi-val{color:var(--yellow);}
+.kpi.c-green .kpi-val{color:var(--green);}
+.kpi-sub{margin-top:8px;font-size:11px;color:var(--muted);}
+.kbadge{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);font-weight:600;
+}
+.kbadge.bad{background:rgba(214,51,85,.08);color:var(--red);}
+.kbadge.ok{background:rgba(14,163,113,.08);color:var(--green);}
+.kbadge.warn{background:rgba(201,138,0,.08);color:var(--yellow);}
+.kpi-spark{position:absolute;right:12px;bottom:12px;opacity:.2;}
+
+/* card */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 18px 12px;border-bottom:1px solid var(--border);}
+.card-title{font-size:13px;font-weight:700;color:var(--text);}
+.cbadge{font-size:10px;padding:3px 9px;border-radius:20px;font-family:var(--mono);font-weight:600;}
+.cbadge.info{background:rgba(67,97,238,.08);color:var(--accent);border:1px solid rgba(67,97,238,.15);}
+.cbadge.warn{background:rgba(224,92,42,.1);color:var(--warn);border:1px solid rgba(224,92,42,.2);}
+.cbadge.ok{background:rgba(14,163,113,.1);color:var(--green);border:1px solid rgba(14,163,113,.2);}
+.card-body{padding:16px 18px;}
+
+/* donut */
+.donut-wrap{display:flex;align-items:center;gap:18px;}
+.leg-list{display:flex;flex-direction:column;gap:5px;flex:1;}
+.leg-row{display:flex;align-items:center;gap:7px;font-size:11px;padding:2px 4px;border-radius:4px;cursor:pointer;transition:background .15s;}
+.leg-row:hover{background:var(--surface2);}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.leg-name{flex:1;color:var(--muted);}
+.leg-pct{font-family:var(--mono);font-weight:600;color:var(--text);}
+.leg-n{font-family:var(--mono);font-size:10px;color:var(--muted);}
+
+/* histogram */
+.hist-bars-wrap{display:flex;align-items:flex-end;gap:5px;height:120px;padding-top:22px;}
+.hist-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;position:relative;}
+.hist-bar{
+  width:100%;border-radius:4px 4px 0 0;cursor:pointer;
+  transition:opacity .2s,transform .2s;min-height:3px;
+}
+.hist-bar:hover{opacity:.7;transform:scaleY(1.03);transform-origin:bottom;}
+.hist-cnt{
+  position:absolute;top:-18px;left:50%;transform:translateX(-50%);
+  font-size:11px;font-family:var(--mono);font-weight:600;color:var(--text);white-space:nowrap;
+}
+.hist-xlbl{display:flex;justify-content:space-between;margin-top:6px;}
+.hist-xlbl span{font-size:9px;font-family:var(--mono);color:var(--muted);}
+
+/* monitoring table */
+.mon-tbl{width:100%;border-collapse:collapse;}
+.mon-tbl th{
+  text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--muted);font-family:var(--mono);padding:0 16px 10px 0;
+  border-bottom:2px solid var(--border);white-space:nowrap;font-weight:600;
+}
+.mon-tbl td{
+  padding:10px 16px 10px 0;font-size:12px;
+  border-bottom:1px solid var(--border);vertical-align:middle;white-space:nowrap;
+}
+.mon-tbl tr:last-child td{border-bottom:none;}
+.mon-tbl tr:hover td{background:var(--surface2);}
+.col-metric{font-family:var(--mono);font-size:11px;}
+.col-num{font-family:var(--mono);}
+.dchip{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10px;font-family:var(--mono);font-weight:700;}
+.dchip.up{background:rgba(214,51,85,.08);color:var(--red);}
+.dchip.down{background:rgba(14,163,113,.08);color:var(--green);}
+.dchip.flat{background:rgba(107,117,153,.08);color:var(--muted);}
+.schip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-family:var(--mono);font-weight:700;text-transform:uppercase;}
+.schip.pass{background:rgba(14,163,113,.1);color:var(--green);border:1px solid rgba(14,163,113,.25);}
+.schip.warn{background:rgba(224,92,42,.1);color:var(--warn);border:1px solid rgba(224,92,42,.25);}
+.sdot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+/* hbar */
+.hbar-list{display:flex;flex-direction:column;gap:9px;}
+.hbar-row{display:flex;align-items:center;gap:9px;}
+.hbar-lbl{font-size:11px;color:var(--muted);width:52px;text-align:right;flex-shrink:0;font-family:var(--mono);}
+.hbar-track{flex:1;height:9px;background:var(--surface2);border-radius:5px;overflow:hidden;border:1px solid var(--border);}
+.hbar-fill{height:100%;border-radius:5px;transition:width .6s cubic-bezier(.4,0,.2,1);}
+.hbar-val{font-size:11px;font-family:var(--mono);color:var(--text);font-weight:600;width:22px;}
+
+/* sla donut */
+.sla-wrap{display:flex;align-items:center;gap:16px;}
+.sla-leg{display:flex;flex-direction:column;gap:12px;}
+.sla-leg-row{display:flex;align-items:center;gap:8px;}
+.sla-dot{width:10px;height:10px;border-radius:50%;}
+.sla-info-lbl{font-size:11px;color:var(--muted);}
+.sla-info-val{font-size:16px;font-weight:700;font-family:var(--mono);}
+
+/* insight boxes */
+.insight-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;height:100%;}
+.ibox{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;box-shadow:var(--shadow);border-left:3px solid transparent;
+  display:flex;flex-direction:column;
+}
+.ibox.i-warn{border-left-color:var(--warn);}
+.ibox.i-ok{border-left-color:var(--green);}
+.ibox.i-info{border-left-color:var(--accent);}
+.ibox-head{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;font-family:var(--mono);}
+.ibox-body{font-size:12px;color:var(--text);line-height:1.55;flex:1;}
+.ibox-body strong{font-weight:700;}
+
+/* warn note */
+.warn-note{
+  display:flex;align-items:flex-start;gap:7px;padding:9px 12px;border-radius:7px;
+  background:rgba(224,92,42,.05);border:1px solid rgba(224,92,42,.15);margin-top:10px;
+}
+.warn-note-txt{font-size:11px;color:var(--warn);line-height:1.5;}
+
+/* alert banner */
+.alert-banner{
+  display:none;align-items:center;gap:10px;padding:9px 16px;border-radius:8px;
+  background:rgba(224,92,42,.07);border:1px solid rgba(224,92,42,.2);
+}
+.alert-banner.show{display:flex;}
+.alert-txt{font-size:11px;color:var(--warn);font-family:var(--mono);}
+.alert-close{margin-left:auto;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;}
+
+/* footer */
+.footer{display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--muted);font-family:var(--mono);flex-wrap:wrap;gap:6px;}
+
+/* empty state */
+.empty{padding:24px;text-align:center;font-size:12px;color:var(--muted);font-family:var(--mono);}
+
+svg{overflow:visible;font-family:'IBM Plex Mono',monospace;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- ══════════ UPLOAD SCREEN ══════════ -->
+<div id="uploadScreen">
+  <div class="up-title">⬡ Work Intake Intelligence — Monitoring</div>
+  <div class="up-sub">Upload your two CSV files to render the dashboard<br><span style="font-size:11px">All processing happens locally in your browser — no data is sent anywhere</span></div>
+  <div class="up-cards">
+    <div class="up-card" id="upCardEvents">
+      <div class="up-icon">📋</div>
+      <div class="up-card-title">prediction_events.csv</div>
+      <div class="up-card-sub">event_ts · channel · routing_label<br>routing_confidence · sla_label · latency_ms</div>
+      <div class="up-status" id="upStatusEvents">Waiting for file…</div>
+      <input type="file" accept=".csv" onchange="loadCSV(this,'events')">
+    </div>
+    <div class="up-card" id="upCardChecks">
+      <div class="up-icon">🔍</div>
+      <div class="up-card-title">monitoring_checks.csv</div>
+      <div class="up-card-sub">metric_name · current_value<br>reference_value · delta_ratio · status</div>
+      <div class="up-status" id="upStatusChecks">Waiting for file…</div>
+      <input type="file" accept=".csv" onchange="loadCSV(this,'checks')">
+    </div>
+  </div>
+  <button class="start-btn" id="startBtn" onclick="boot()">▶ Render Dashboard</button>
+  <span class="demo-link" onclick="loadDemo()">Use demo data instead</span>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div id="dashboard">
+<div class="page">
+
+  <!-- header -->
+  <div class="header">
+    <div>
+      <div class="page-title">Work Intake Intelligence — Monitoring Overview</div>
+      <div class="page-sub" id="pageSub">Routing · SLA Risk · Confidence · Latency</div>
+    </div>
+    <div class="header-right">
+      <div style="font-size:10px;font-family:var(--mono);color:var(--muted)" id="headerMeta"></div>
+      <button class="reset-btn" onclick="resetAll()">↩ Re-upload</button>
+    </div>
+  </div>
+
+  <!-- alert banner -->
+  <div class="alert-banner" id="alertBanner">
+    <span>⚠</span>
+    <span class="alert-txt" id="alertTxt"></span>
+    <span class="alert-close" onclick="this.parentElement.classList.remove('show')">✕</span>
+  </div>
+
+  <!-- filter bar -->
+  <div class="filter-bar">
+    <span class="filter-label">Routing Label</span>
+    <div class="filter-group" id="routingChips"></div>
+    <div class="filter-sep"></div>
+    <span class="filter-label">Channel</span>
+    <div class="filter-group" id="channelChips"></div>
+    <div class="filter-sep"></div>
+    <span class="filter-label">SLA</span>
+    <div class="filter-group" id="slaChips"></div>
+    <span class="filter-clear" onclick="clearFilters()">Clear all</span>
+  </div>
+
+  <!-- KPI row -->
+  <div>
+    <div class="stag">Key Metrics</div>
+    <div class="kpi-row">
+      <div class="kpi c-blue">
+        <div class="kpi-lbl">Total Predictions</div>
+        <div class="kpi-val" id="kTotal">—</div>
+        <div class="kpi-sub" id="kTotalSub"></div>
+        <svg class="kpi-spark" width="48" height="28"><polyline points="0,22 8,18 16,20 24,10 32,14 40,6 48,10" fill="none" stroke="#4361ee" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="kpi c-warn">
+        <div class="kpi-lbl">SLA At-Risk Rate</div>
+        <div class="kpi-val" id="kSLA">—</div>
+        <div class="kpi-sub" id="kSLASub"></div>
+        <svg class="kpi-spark" width="48" height="28"><polyline points="0,20 8,18 16,15 24,12 32,10 40,8 48,5" fill="none" stroke="#e05c2a" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="kpi c-yellow">
+        <div class="kpi-lbl">Low Confidence Rate</div>
+        <div class="kpi-val" id="kConf">—</div>
+        <div class="kpi-sub" id="kConfSub"></div>
+        <svg class="kpi-spark" width="48" height="28"><polyline points="0,14 8,16 16,13 24,15 32,14 40,16 48,13" fill="none" stroke="#c98a00" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      <div class="kpi c-green">
+        <div class="kpi-lbl">Avg Latency (ms)</div>
+        <div class="kpi-val" id="kLat">—</div>
+        <div class="kpi-sub" id="kLatSub"></div>
+        <svg class="kpi-spark" width="48" height="28"><polyline points="0,12 8,10 16,13 24,9 32,11 40,8 48,10" fill="none" stroke="#0ea371" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- mid row -->
+  <div>
+    <div class="stag">Distribution Analysis</div>
+    <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:14px">
+
+      <!-- routing donut -->
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-title">Routing Distribution</span>
+          <span class="cbadge info" id="routingBadge">—</span>
+        </div>
+        <div class="card-body">
+          <div class="donut-wrap">
+            <svg id="donutSvg" width="150" height="150" viewBox="0 0 150 150" style="flex-shrink:0"></svg>
+            <div class="leg-list" id="donutLegend"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- confidence histogram -->
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-title">Routing Confidence Buckets</span>
+          <span class="cbadge" id="confBadge">—</span>
+        </div>
+        <div class="card-body">
+          <div class="hist-bars-wrap" id="histBars"></div>
+          <div style="border-top:1px solid var(--border);margin:6px 0 4px"></div>
+          <div class="hist-xlbl">
+            <span>0.0–0.2</span><span>0.2–0.4</span><span>0.4–0.6</span><span>0.6–0.8</span><span>0.8–1.0</span>
+          </div>
+          <div class="warn-note" id="confWarnNote" style="display:none">
+            <span>⚠</span>
+            <div class="warn-note-txt" id="confWarnTxt"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- bottom block -->
+  <div>
+    <div class="stag">Breakdown &amp; Monitoring</div>
+
+    <!-- row B1: checks table + channel bar -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:14px">
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-title">Current Window vs Baseline Checks</span>
+          <span class="cbadge" id="checksBadge">—</span>
+        </div>
+        <div class="card-body">
+          <table class="mon-tbl">
+            <thead><tr>
+              <th>Metric</th><th>Current</th><th>Baseline</th><th>Δ Ratio</th><th>Status</th>
+            </tr></thead>
+            <tbody id="checksBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-title">Predictions by Channel</span>
+          <span class="cbadge info" id="channelBadge">—</span>
+        </div>
+        <div class="card-body">
+          <div class="hbar-list" id="channelBars"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- row B2: SLA split + insight boxes -->
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:14px;margin-top:14px;align-items:stretch">
+
+      <div class="card">
+        <div class="card-hdr">
+          <span class="card-title">SLA Label Split</span>
+          <span class="cbadge warn" id="slaBadge">—</span>
+        </div>
+        <div class="card-body">
+          <div class="sla-wrap">
+            <svg id="slaSvg" width="120" height="120" viewBox="0 0 120 120" style="flex-shrink:0"></svg>
+            <div class="sla-leg" id="slaLeg"></div>
+          </div>
+          <div class="warn-note" id="slaNote" style="margin-top:14px">
+            <span>⚠</span>
+            <div class="warn-note-txt" id="slaNoteTxt"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-grid">
+        <div class="ibox i-warn">
+          <div class="ibox-head">⚠ Model Confidence</div>
+          <div class="ibox-body" id="insightConf">—</div>
+        </div>
+        <div class="ibox i-warn">
+          <div class="ibox-head">⚠ SLA Risk Drift</div>
+          <div class="ibox-body" id="insightSLA">—</div>
+        </div>
+        <div class="ibox" id="insightLatBox">
+          <div class="ibox-head" id="insightLatHead">Latency</div>
+          <div class="ibox-body" id="insightLat">—</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Work Intake Intelligence · Monitoring Overview · v0.3.0</span>
+    <span id="footerModels">—</span>
+    <span id="footerTs">—</span>
+  </div>
+
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+let eventsRaw = null;
+let checksRaw = null;
+let activeFilters = { routing: new Set(['__all__']), channel: new Set(['__all__']), sla: new Set(['__all__']) };
+
+const COLORS = ['#4361ee','#7048e8','#e05c2a','#c98a00','#0ea371','#06b6d4','#84cc16','#ec4899','#f43f5e','#64748b'];
+
+// ═══════════════════════════════════════════
+// UPLOAD
+// ═══════════════════════════════════════════
+function loadCSV(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+  Papa.parse(file, {
+    header: true, skipEmptyLines: true,
+    complete(res) {
+      if (type === 'events') {
+        eventsRaw = res.data;
+        document.getElementById('upStatusEvents').textContent = `✓ ${eventsRaw.length} rows loaded`;
+        document.getElementById('upCardEvents').classList.add('loaded');
+      } else {
+        checksRaw = res.data;
+        document.getElementById('upStatusChecks').textContent = `✓ ${checksRaw.length} checks loaded`;
+        document.getElementById('upCardChecks').classList.add('loaded');
+      }
+      if (eventsRaw) document.getElementById('startBtn').classList.add('ready');
+    }
+  });
+}
+
+function loadDemo() {
+  const channels = ['email','portal','phone','chat'];
+  const labels = ['billing and payments','product support','it support','customer service','human resources','returns and exchanges','service outages and maintenance','technical support'];
+  eventsRaw = [];
+  const base = new Date('2026-03-08T16:00:00Z');
+  for (let i = 0; i < 39; i++) {
+    const ts = new Date(base.getTime() + i * 110000);
+    const conf = Math.random() < 0.85 ? Math.random() * 0.5 : 0.5 + Math.random() * 0.5;
+    eventsRaw.push({
+      event_ts: ts.toISOString(),
+      request_id: 'demo_' + i,
+      routing_model_version: 'routing_logreg_tfidf_balanced_v1',
+      sla_model_version: 'sla_logreg_structured_v1',
+      channel: channels[Math.floor(Math.random() * channels.length)],
+      language: 'en',
+      text_length_chars: Math.round(80 + Math.random() * 400),
+      routing_label: labels[Math.floor(Math.random() * labels.length)],
+      routing_confidence: conf.toFixed(6),
+      sla_label: Math.random() < 0.46 ? 'at_risk' : 'not_at_risk',
+      sla_probability: (Math.random()).toFixed(6),
+      latency_ms: (5 + Math.random() * 40).toFixed(2),
+      status: 'success',
+    });
+  }
+  checksRaw = [
+    { metric_name:'avg_text_length_chars', current_value:'258.4', reference_value:'94.55', delta_ratio:'1.7329', status:'warn' },
+    { metric_name:'sla_at_risk_rate', current_value:'0.9', reference_value:'0.3636', delta_ratio:'1.4752', status:'warn' },
+    { metric_name:'routing_low_confidence_rate', current_value:'0.9', reference_value:'0.8182', delta_ratio:'0.1', status:'pass' },
+    { metric_name:'p95_latency_ms', current_value:'7.99', reference_value:'14.64', delta_ratio:'0.4542', status:'pass' },
+  ];
+  document.getElementById('upStatusEvents').textContent = '✓ 39 demo rows';
+  document.getElementById('upCardEvents').classList.add('loaded');
+  document.getElementById('upStatusChecks').textContent = '✓ 4 demo checks';
+  document.getElementById('upCardChecks').classList.add('loaded');
+  document.getElementById('startBtn').classList.add('ready');
+  boot();
+}
+
+function boot() {
+  if (!eventsRaw) return;
+  document.getElementById('uploadScreen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  buildFilters();
+  render();
+}
+
+function resetAll() {
+  eventsRaw = null; checksRaw = null;
+  activeFilters = { routing: new Set(['__all__']), channel: new Set(['__all__']), sla: new Set(['__all__']) };
+  document.getElementById('uploadScreen').style.display = 'flex';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('upCardEvents').classList.remove('loaded');
+  document.getElementById('upCardChecks').classList.remove('loaded');
+  document.getElementById('upStatusEvents').textContent = 'Waiting for file…';
+  document.getElementById('upStatusChecks').textContent = 'Waiting for file…';
+  document.getElementById('startBtn').classList.remove('ready');
+}
+
+// ═══════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════
+function buildFilters() {
+  const routingVals = [...new Set(eventsRaw.map(r => r.routing_label).filter(Boolean))].sort();
+  const channelVals = [...new Set(eventsRaw.map(r => r.channel).filter(Boolean))].sort();
+  const slaVals     = [...new Set(eventsRaw.map(r => r.sla_label).filter(Boolean))].sort();
+
+  buildChipGroup('routingChips', routingVals, 'routing');
+  buildChipGroup('channelChips', channelVals, 'channel');
+  buildChipGroup('slaChips', slaVals, 'sla');
+}
+
+function buildChipGroup(elId, vals, filterKey) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  // All chip
+  const allChip = document.createElement('span');
+  allChip.className = 'chip active';
+  allChip.textContent = 'All';
+  allChip.onclick = () => { activeFilters[filterKey] = new Set(['__all__']); syncChips(elId, filterKey); render(); };
+  el.appendChild(allChip);
+
+  vals.forEach(v => {
+    const c = document.createElement('span');
+    c.className = 'chip';
+    c.textContent = v;
+    c.dataset.val = v;
+    c.onclick = () => toggleChip(c, v, filterKey, elId);
+    el.appendChild(c);
+  });
+}
+
+function toggleChip(chip, val, filterKey, groupId) {
+  const f = activeFilters[filterKey];
+  if (f.has('__all__')) {
+    f.delete('__all__');
+    f.add(val);
+  } else if (f.has(val)) {
+    f.delete(val);
+    if (f.size === 0) f.add('__all__');
+  } else {
+    f.add(val);
+  }
+  syncChips(groupId, filterKey);
+  render();
+}
+
+function syncChips(groupId, filterKey) {
+  const el = document.getElementById(groupId);
+  const f = activeFilters[filterKey];
+  el.querySelectorAll('.chip').forEach(c => {
+    if (c.textContent === 'All') c.classList.toggle('active', f.has('__all__'));
+    else c.classList.toggle('active', f.has(c.dataset.val));
+  });
+}
+
+function clearFilters() {
+  activeFilters = { routing: new Set(['__all__']), channel: new Set(['__all__']), sla: new Set(['__all__']) };
+  ['routingChips','channelChips','slaChips'].forEach((id, i) => {
+    const key = ['routing','channel','sla'][i];
+    syncChips(id, key);
+  });
+  render();
+}
+
+function getFiltered() {
+  return eventsRaw.filter(r => {
+    const rf = activeFilters.routing;
+    const cf = activeFilters.channel;
+    const sf = activeFilters.sla;
+    const rok = rf.has('__all__') || rf.has(r.routing_label);
+    const cok = cf.has('__all__') || cf.has(r.channel);
+    const sok = sf.has('__all__') || sf.has(r.sla_label);
+    return rok && cok && sok;
+  });
+}
+
+// ═══════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════
+function render() {
+  const rows = getFiltered();
+  const n = rows.length;
+
+  if (n === 0) {
+    ['kTotal','kSLA','kConf','kLat'].forEach(id => document.getElementById(id).textContent = '—');
+    document.getElementById('kTotalSub').innerHTML = '<span class="kbadge warn">No data for filters</span>';
+    return;
+  }
+
+  const num = (r, k) => parseFloat(r[k]) || 0;
+
+  // timestamps
+  const tss = rows.map(r => new Date(r.event_ts)).filter(d => !isNaN(d));
+  const minTs = tss.length ? new Date(Math.min(...tss)) : null;
+  const maxTs = tss.length ? new Date(Math.max(...tss)) : null;
+
+  // KPIs
+  const atRisk = rows.filter(r => (r.sla_label||'').toLowerCase() === 'at_risk').length;
+  const lowConf = rows.filter(r => num(r,'routing_confidence') > 0 && num(r,'routing_confidence') < 0.5).length;
+  const lats = rows.map(r => num(r,'latency_ms')).filter(v => v > 0);
+  const avgLat = lats.length ? lats.reduce((a,b)=>a+b,0)/lats.length : 0;
+  const p95Lat = lats.length ? percentile(lats, 0.95) : 0;
+  const successN = rows.filter(r => r.status === 'success').length;
+  const slaRate = atRisk / n;
+  const confRate = lowConf / n;
+
+  // page meta
+  if (minTs && maxTs) {
+    document.getElementById('pageSub').textContent =
+      `Routing · SLA Risk · Confidence · Latency · ${fmtTs(minTs)} → ${fmtTs(maxTs)} UTC`;
+  }
+  const models = [...new Set(eventsRaw.map(r => r.routing_model_version).filter(Boolean))];
+  document.getElementById('headerMeta').textContent = models[0] || '';
+  document.getElementById('footerModels').textContent = (eventsRaw[0]?.routing_model_version || '') + ' · ' + (eventsRaw[0]?.sla_model_version || '');
+  document.getElementById('footerTs').textContent = 'Rendered: ' + new Date().toLocaleString();
+
+  // KPI cards
+  document.getElementById('kTotal').textContent = n.toLocaleString();
+  document.getElementById('kTotalSub').innerHTML = `<span class="kbadge ok">✓ ${successN} success</span>`;
+
+  document.getElementById('kSLA').textContent = pct(slaRate);
+  document.getElementById('kSLASub').innerHTML = `<span class="kbadge ${slaRate > 0.35 ? 'bad' : 'ok'}">${atRisk} at-risk tickets</span>`;
+
+  document.getElementById('kConf').textContent = pct(confRate);
+  document.getElementById('kConfSub').innerHTML = `<span class="kbadge ${confRate > 0.5 ? 'warn' : 'ok'}">${lowConf} below 0.5 threshold</span>`;
+
+  document.getElementById('kLat').textContent = avgLat.toFixed(1) + 'ms';
+  document.getElementById('kLatSub').innerHTML = `<span class="kbadge ok">P95: ${p95Lat.toFixed(1)}ms</span>`;
+
+  // alert
+  if (checksRaw) {
+    const warns = checksRaw.filter(r => (r.status||'').toLowerCase() === 'warn');
+    if (warns.length) {
+      const msg = warns.map(w => `${w.metric_name} Δ${(parseFloat(w.delta_ratio)*100).toFixed(1)}%`).join(' · ');
+      document.getElementById('alertTxt').textContent = `${warns.length} check(s) triggered WARN — ${msg}`;
+      document.getElementById('alertBanner').classList.add('show');
+    }
+  }
+
+  // visuals
+  renderDonut(rows);
+  renderHistogram(rows, confRate);
+  renderChecksTable();
+  renderChannelBars(rows);
+  renderSLASplit(rows, atRisk, n, slaRate);
+  renderInsights(rows, confRate, slaRate, avgLat, p95Lat);
+}
+
+// ═══════════════════════════════════════════
+// ROUTING DONUT
+// ═══════════════════════════════════════════
+function renderDonut(rows) {
+  const counts = countBy(rows, 'routing_label');
+  const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const total = rows.length;
+  const svg = document.getElementById('donutSvg');
+  const leg = document.getElementById('donutLegend');
+
+  const cx=75, cy=75, r=52, sw=18;
+  const circ = 2*Math.PI*r;
+  let offset = 0;
+
+  svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#f0f2f7" stroke-width="${sw}"/>`;
+  leg.innerHTML = '';
+
+  entries.forEach(([label, count], i) => {
+    const color = COLORS[i % COLORS.length];
+    const frac = count / total;
+    const dash = frac * circ;
+    svg.innerHTML += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}"
+      stroke-width="${sw}" stroke-dasharray="${dash.toFixed(2)} ${(circ-dash).toFixed(2)}"
+      stroke-dashoffset="${(-offset).toFixed(2)}" transform="rotate(-90 ${cx} ${cy})"
+      style="cursor:pointer" title="${label}: ${count}"/>`;
+    offset += dash;
+
+    leg.innerHTML += `<div class="leg-row">
+      <div class="leg-dot" style="background:${color}"></div>
+      <span class="leg-name">${label||'(blank)'}</span>
+      <span class="leg-pct">${(frac*100).toFixed(1)}%</span>
+      <span class="leg-n">&nbsp;(${count})</span>
+    </div>`;
+  });
+
+  svg.innerHTML += `
+    <text x="${cx}" y="${cy-6}" text-anchor="middle" fill="#1a1f36" font-size="17" font-weight="700">${total}</text>
+    <text x="${cx}" y="${cy+10}" text-anchor="middle" fill="#6b7599" font-size="8">total</text>`;
+
+  document.getElementById('routingBadge').textContent = `${entries.length} labels · ${total} tickets`;
+}
+
+// ═══════════════════════════════════════════
+// CONFIDENCE HISTOGRAM
+// ═══════════════════════════════════════════
+function renderHistogram(rows, confRate) {
+  const buckets = [
+    {label:'0.0–0.2', min:0,   max:0.2,  color:'#e05c2a'},
+    {label:'0.2–0.4', min:0.2, max:0.4,  color:'#d63355'},
+    {label:'0.4–0.6', min:0.4, max:0.6,  color:'#c98a00'},
+    {label:'0.6–0.8', min:0.6, max:0.8,  color:'#4361ee'},
+    {label:'0.8–1.0', min:0.8, max:1.01, color:'#0ea371'},
+  ];
+
+  buckets.forEach(b => {
+    b.n = rows.filter(r => {
+      const v = parseFloat(r.routing_confidence);
+      return !isNaN(v) && v >= b.min && v < b.max;
+    }).length;
+  });
+
+  const maxN = Math.max(...buckets.map(b=>b.n), 1);
+  const el = document.getElementById('histBars');
+  el.innerHTML = '';
+
+  buckets.forEach(b => {
+    const pct = (b.n / maxN * 100).toFixed(1);
+    el.innerHTML += `<div class="hist-col">
+      <div class="hist-bar" style="height:${Math.max(pct,2)}%;background:${b.color};opacity:.85">
+        <span class="hist-cnt">${b.n}</span>
+      </div>
+    </div>`;
+  });
+
+  const lowTotal = buckets.slice(0,3).reduce((a,b)=>a+b.n,0);
+  const lowPct = rows.length ? (lowTotal/rows.length*100).toFixed(1) : 0;
+  const badge = document.getElementById('confBadge');
+  badge.textContent = `${lowPct}% below 0.6`;
+  badge.className = 'cbadge ' + (confRate > 0.5 ? 'warn' : 'ok');
+
+  const warnBox = document.getElementById('confWarnNote');
+  if (confRate > 0.3) {
+    warnBox.style.display = 'flex';
+    document.getElementById('confWarnTxt').innerHTML =
+      `<strong>${lowTotal} of ${rows.length}</strong> predictions fall below 0.6 confidence — primary signal for model upgrade.`;
+  } else {
+    warnBox.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════
+// MONITORING CHECKS TABLE
+// ═══════════════════════════════════════════
+function renderChecksTable() {
+  if (!checksRaw) {
+    document.getElementById('checksBody').innerHTML = '<tr><td colspan="5" class="empty">No monitoring_checks.csv loaded</td></tr>';
+    return;
+  }
+  const warns = checksRaw.filter(r=>(r.status||'').toLowerCase()==='warn').length;
+  const badge = document.getElementById('checksBadge');
+  badge.textContent = warns > 0 ? `${warns} WARN` : 'All PASS';
+  badge.className = 'cbadge ' + (warns > 0 ? 'warn' : 'ok');
+
+  document.getElementById('checksBody').innerHTML = checksRaw.map(r => {
+    const delta = parseFloat(r.delta_ratio) || 0;
+    const pctD = (delta * 100).toFixed(1);
+    const dClass = delta > 0.1 ? 'up' : delta < -0.05 ? 'down' : 'flat';
+    const dArrow = delta > 0.1 ? '↑' : delta < -0.05 ? '↓' : '→';
+    const st = (r.status||'pass').toLowerCase();
+    const isWarn = st === 'warn';
+
+    const fmtV = v => {
+      const n = parseFloat(v);
+      if (isNaN(n)) return v || '—';
+      if (Math.abs(n) < 1 && n !== 0) return (n*100).toFixed(1)+'%';
+      return n > 100 ? Math.round(n).toLocaleString() : n.toFixed(2);
+    };
+
+    return `<tr style="${isWarn?'background:rgba(224,92,42,.03)':''}">
+      <td class="col-metric" style="color:${isWarn?'var(--warn)':'var(--text)'}">${r.metric_name||'—'}</td>
+      <td class="col-num" style="font-weight:${isWarn?700:400};color:${isWarn?'var(--warn)':'var(--text)'}">${fmtV(r.current_value)}</td>
+      <td class="col-num" style="color:var(--muted)">${fmtV(r.reference_value)}</td>
+      <td><span class="dchip ${dClass}">${dArrow} ${Math.abs(pctD)}%</span></td>
+      <td><span class="schip ${st==='warn'?'warn':'pass'}"><span class="sdot"></span>${st.toUpperCase()}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+// CHANNEL BARS
+// ═══════════════════════════════════════════
+function renderChannelBars(rows) {
+  const counts = countBy(rows, 'channel');
+  const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const maxN = Math.max(...entries.map(e=>e[1]), 1);
+  const colors = ['#4361ee','#7048e8','#0ea371','#c98a00','#e05c2a','#06b6d4'];
+
+  document.getElementById('channelBars').innerHTML = entries.map(([label, n], i) => {
+    const w = (n / maxN * 100).toFixed(1);
+    return `<div class="hbar-row">
+      <div class="hbar-lbl">${label||'(blank)'}</div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${w}%;background:${colors[i%colors.length]}"></div></div>
+      <div class="hbar-val">${n}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('channelBadge').textContent = `${entries.length} channels`;
+}
+
+// ═══════════════════════════════════════════
+// SLA SPLIT DONUT
+// ═══════════════════════════════════════════
+function renderSLASplit(rows, atRisk, n, slaRate) {
+  const onTrack = n - atRisk;
+  const circ = 2 * Math.PI * 46;
+  const atRiskDash = (atRisk / n) * circ;
+  const onTrackDash = (onTrack / n) * circ;
+
+  document.getElementById('slaSvg').innerHTML = `
+    <circle cx="60" cy="60" r="46" fill="none" stroke="#f0f2f7" stroke-width="18"/>
+    <circle cx="60" cy="60" r="46" fill="none" stroke="#d63355" stroke-width="18"
+      stroke-dasharray="${atRiskDash.toFixed(2)} ${(circ-atRiskDash).toFixed(2)}"
+      stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+    <circle cx="60" cy="60" r="46" fill="none" stroke="#4361ee" stroke-width="18"
+      stroke-dasharray="${onTrackDash.toFixed(2)} ${(circ-onTrackDash).toFixed(2)}"
+      stroke-dashoffset="${(-atRiskDash).toFixed(2)}" transform="rotate(-90 60 60)"/>
+    <text x="60" y="56" text-anchor="middle" fill="#1a1f36" font-size="13" font-weight="700">${n}</text>
+    <text x="60" y="70" text-anchor="middle" fill="#6b7599" font-size="8">tickets</text>`;
+
+  document.getElementById('slaLeg').innerHTML = `
+    <div class="sla-leg-row">
+      <div class="sla-dot" style="background:#d63355"></div>
+      <div><div class="sla-info-lbl">At Risk</div>
+      <div class="sla-info-val" style="color:#d63355">${atRisk} <span style="font-size:11px;color:var(--muted)">(${pct(slaRate)})</span></div></div>
+    </div>
+    <div class="sla-leg-row">
+      <div class="sla-dot" style="background:#4361ee"></div>
+      <div><div class="sla-info-lbl">On Track</div>
+      <div class="sla-info-val" style="color:#4361ee">${onTrack} <span style="font-size:11px;color:var(--muted)">(${pct(onTrack/n)})</span></div></div>
+    </div>`;
+
+  document.getElementById('slaBadge').textContent = pct(slaRate) + ' at risk';
+
+  // SLA note — pull from checks if available
+  let baselineSLA = null;
+  if (checksRaw) {
+    const row = checksRaw.find(r => r.metric_name === 'sla_at_risk_rate');
+    if (row) baselineSLA = parseFloat(row.reference_value);
+  }
+  const noteEl = document.getElementById('slaNote');
+  const noteTxt = document.getElementById('slaNoteTxt');
+  if (baselineSLA !== null) {
+    noteEl.style.display = 'flex';
+    const mult = (slaRate / baselineSLA).toFixed(2);
+    noteTxt.innerHTML = `At-risk rate <strong>${mult}×</strong> above baseline (${pct(baselineSLA)} → ${pct(slaRate)}) — ${slaRate > baselineSLA * 1.1 ? 'WARN triggered' : 'within range'}`;
+  } else {
+    noteEl.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════
+// INSIGHT BOXES
+// ═══════════════════════════════════════════
+function renderInsights(rows, confRate, slaRate, avgLat, p95Lat) {
+  const lowConf = Math.round(confRate * rows.length);
+
+  // confidence insight
+  document.getElementById('insightConf').innerHTML =
+    `<strong>${pct(confRate)}</strong> of predictions scored below 0.5 confidence (${lowConf} of ${rows.length}). ` +
+    (confRate > 0.5
+      ? `Most mass in low-confidence buckets — baseline model has classification difficulty. Primary upgrade target.`
+      : `Confidence distribution is acceptable, though monitoring for drift is recommended.`);
+
+  // SLA insight — use checks baseline if available
+  let slaInsight = '';
+  if (checksRaw) {
+    const row = checksRaw.find(r => r.metric_name === 'sla_at_risk_rate');
+    const textRow = checksRaw.find(r => r.metric_name === 'avg_text_length_chars');
+    if (row) {
+      const base = parseFloat(row.reference_value);
+      const cur  = parseFloat(row.current_value);
+      slaInsight = `At-risk rate ${pct(base)} → <strong>${pct(cur)}</strong>.`;
+    }
+    if (textRow) {
+      slaInsight += ` Avg text length ${parseFloat(textRow.reference_value).toFixed(0)} → <strong>${parseFloat(textRow.current_value).toFixed(0)} chars</strong> — longer, complex tickets arriving.`;
+    }
+  } else {
+    slaInsight = `Current at-risk rate: <strong>${pct(slaRate)}</strong>. Upload monitoring_checks.csv for baseline comparison.`;
+  }
+  document.getElementById('insightSLA').innerHTML = slaInsight;
+
+  // latency insight — check against p95 baseline from checks
+  let latBaseline = null;
+  if (checksRaw) {
+    const row = checksRaw.find(r => r.metric_name === 'p95_latency_ms');
+    if (row) latBaseline = parseFloat(row.reference_value);
+  }
+  const isLatGood = latBaseline === null ? true : p95Lat < latBaseline;
+  const latBox = document.getElementById('insightLatBox');
+  latBox.className = 'ibox ' + (isLatGood ? 'i-ok' : 'i-warn');
+  document.getElementById('insightLatHead').textContent = (isLatGood ? '✓' : '⚠') + ' Latency ' + (isLatGood ? 'Healthy' : 'Elevated');
+  document.getElementById('insightLat').innerHTML =
+    `Avg <strong>${avgLat.toFixed(1)}ms</strong>, P95 <strong>${p95Lat.toFixed(1)}ms</strong>` +
+    (latBaseline ? ` vs baseline <strong>${latBaseline.toFixed(1)}ms</strong>.` : '.') +
+    (isLatGood ? ' Deployment is lightweight and stable.' : ' P95 exceeds baseline — investigate outlier requests.');
+}
+
+// ═══════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════
+function countBy(rows, field) {
+  const c = {};
+  rows.forEach(r => { const v = (r[field]||'(blank)').trim(); c[v] = (c[v]||0)+1; });
+  return c;
+}
+
+function percentile(arr, p) {
+  const s = [...arr].sort((a,b)=>a-b);
+  return s[Math.min(Math.floor(s.length * p), s.length-1)];
+}
+
+function pct(v) { return (v*100).toFixed(1)+'%'; }
+
+function fmtTs(d) { return d.toISOString().slice(0,16).replace('T',' '); }
+</script>
+</body>
+</html>

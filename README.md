@@ -255,11 +255,15 @@ Related monitoring documentation:
 
 ## Monitoring Dashboard
 
-A Power BI monitoring page was built from exported prediction logs and monitoring check summaries.
+A reporting layer was built on top of the exported prediction logs and monitoring check summaries.
+
+### Power BI-ready dashboard view
+
+The project exports Power BI-ready monitoring outputs so the same data can be consumed in a BI workflow.
 
 ![Monitoring Dashboard](reports/monitoring/assets/monitoring_dashboard.png)
 
-The dashboard highlights:
+This dashboard view highlights:
 - total predictions analyzed
 - SLA at-risk rate
 - routing low-confidence rate
@@ -267,7 +271,19 @@ The dashboard highlights:
 - routing distribution
 - current-window vs baseline monitoring checks
 
-In the shifted demo workload, input length and SLA risk rate increased enough to trigger warnings, while latency remained stable. This provides a lightweight but practical monitoring view for an AI-assisted intake workflow.
+### HTML monitoring prototype
+
+The repository also includes an HTML-based monitoring prototype that acts as a lightweight top-layer visualization for the same monitoring schema used by the exported monitoring outputs.
+
+Prototype files:
+- interactive HTML: `reports/monitoring/assets/monitoring_interactive.html`
+- prototype screenshot: `reports/monitoring/assets/WorkIntakeReport.png`
+
+![HTML Monitoring Prototype](reports/monitoring/assets/WorkIntakeReport.png)
+
+This prototype is designed to load schema-aligned monitoring data and present the same operational signals in a more interactive UI layer, including KPI cards, routing distribution, confidence buckets, SLA movement, and monitoring checks.
+
+In the shifted demo workload, input length and SLA risk rate increased enough to trigger warnings, while latency remained stable. Together, the Power BI-ready output path and the HTML prototype show two practical ways to surface the same monitoring signals for an AI-assisted intake workflow.
 
 ---
 
@@ -364,27 +380,41 @@ python -m src.monitoring.export_monitoring_csv
 
 ```text
 src/
-  api/          FastAPI entrypoint, request schema, inference service
-  data/         raw-data standardization and preprocessing
-  models/       baseline training and evaluation scripts
-  monitoring/   prediction logging, reference profiles, drift checks, CSV export
-  utils/        shared project path helpers
+  api/
+  data/
+  models/
+  monitoring/
+  utils/
 
 reports/
-  evaluation/   baseline result summaries
-  monitoring/   monitoring specs, playbooks, generated outputs, dashboard assets
-  demo/         pitch, walkthrough, and release/demo materials
+  evaluation/
+  monitoring/
+  demo/
 
 data/
-  raw/          raw and standardized dataset files
-  monitoring/   prediction logs, reference profiles, Power BI-ready exports
+  raw/
+  monitoring/
 
 artifacts/
-  models/       trained `.joblib` model artifacts
-  metrics/      saved training metrics and evaluation outputs
+  models/
+  metrics/
 
-scripts/        smoke tests, demo replay, and demo run helpers
+scripts/
 ```
+
+- `src/api/`: FastAPI entrypoint, request schema, and inference service
+- `src/data/`: raw-data standardization and preprocessing
+- `src/models/`: baseline training and evaluation scripts
+- `src/monitoring/`: prediction logging, reference profiles, drift checks, and CSV export
+- `src/utils/`: shared project path helpers
+- `reports/evaluation/`: baseline result summaries
+- `reports/monitoring/`: monitoring specs, playbooks, generated outputs, dashboard assets, and visualization prototypes
+- `reports/demo/`: pitch, walkthrough, and release/demo materials
+- `data/raw/`: raw and standardized dataset files
+- `data/monitoring/`: prediction logs, reference profiles, and Power BI-ready exports
+- `artifacts/models/`: trained `.joblib` model artifacts
+- `artifacts/metrics/`: saved training metrics and evaluation outputs
+- `scripts/`: smoke tests, demo replay, and demo run helpers
 
 ---
 
